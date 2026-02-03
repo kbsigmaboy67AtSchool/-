@@ -1,50 +1,42 @@
 (() => {
-  const s = document.currentScript;
-  if (!s) return;
-
-  let link = s.getAttribute("link");
-  const tabname = s.getAttribute("tabname");
-  const tabimage = s.getAttribute("tabimage");
-
-  if (!link) {
-    console.error("No link attribute provided");
-    return;
-  }
-
-  // base64 decode if needed
-  try {
-    if (!/^(https?|data:|blob:)/i.test(link)) {
-      link = atob(link);
+  function run() {
+    const node = document.querySelector("nextVG");
+    if (!node) {
+      console.error("<nextVG> not found");
+      return;
     }
-  } catch {}
 
-  // URI decode fallback
-  try {
-    link = decodeURIComponent(link);
-  } catch {}
+    let link = (node.textContent || "").trim();
+    const tabname = node.getAttribute("tabname");
+    const tabimage = node.getAttribute("tabimage");
 
-  // Apply title early (only affects the original page briefly)
-  if (tabname) document.title = tabname;
-
-  // Apply favicon early
-  if (tabimage) {
-    let icon = document.querySelector("link[rel*='icon']");
-    if (!icon) {
-      icon = document.createElement("link");
-      icon.rel = "icon";
-      document.head.appendChild(icon);
+    if (!link) {
+      console.error("No link inside <nextVG>");
+      return;
     }
-    icon.href = tabimage;
-  }
 
-  // Escape quotes to avoid breaking HTML
-  const safeLink = link.replace(/"/g, "&quot;");
+    // base64 decode if needed
+    try {
+      if (!/^(https?|data:|blob:)/i.test(link)) {
+        link = atob(link);
+      }
+    } catch {}
 
-  const html = `<!DOCTYPE html>
+    // URI decode fallback
+    try {
+      link = decodeURIComponent(link);
+    } catch {}
+
+    // Escape for HTML
+    const safeLink = link.replace(/"/g, "&quot;");
+
+    const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Permissions-Policy" content="fullscreen=*">
+<title>${tabname || ""}</title>
+${tabimage ? `<link rel="icon" href="${tabimage}">` : ""}
 <style>
 * { margin:0; padding:0; background:black; }
 html, body { width:100%; height:100%; overflow:hidden; }
@@ -71,21 +63,27 @@ iframe { width:100%; height:100%; border:none; }
 <script>
   const f = document.getElementById("frame");
   const overlay = document.getElementById("fs");
-
   overlay.addEventListener("click", () => {
     overlay.remove();
     if (f.requestFullscreen) f.requestFullscreen().catch(()=>{});
     else if (f.webkitRequestFullscreen) f.webkitRequestFullscreen();
-    else if (f.msRequestFullscreen) f.msRequestFullscreen();
   }, { once: true });
-</script>
+<\/script>
 
 </body>
 </html>`;
 
-  const blob = new Blob([html], { type: "text/html" });
-  const blobURL = URL.createObjectURL(blob);
+    const blob = new Blob([html], { type: "text/html" });
+    const blobURL = URL.createObjectURL(blob);
 
-  // Replace immediately, no history entry
-  location.replace(blobURL);
+    // No history entry
+    location.replace(blobURL);
+  }
+
+  // Ensure DOM exists
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", run);
+  } else {
+    run();
+  }
 })();
