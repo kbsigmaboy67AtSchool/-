@@ -2,35 +2,25 @@
   function parseConfig(text) {
     const cfg = {};
     const regex = /([\w.]+)\s*:\s*`([^`]*)`/g;
-    let match;
-    while ((match = regex.exec(text))) {
-      cfg[match[1]] = match[2];
+    let m;
+    while ((m = regex.exec(text))) {
+      cfg[m[1]] = m[2];
     }
     return cfg;
   }
 
-  function run() {
-    const node = document.querySelector("nvg");
-    if (!node) {
-      console.error("<nvg> not found");
-      return;
-    }
-
+  function process(node) {
     const cfg = parseConfig(node.textContent || "");
 
     let link = cfg["link"];
     if (!link) {
-      console.error("link is required in <nvg>");
+      console.error("nvg: link is required");
       return;
     }
 
-    // decode support
     try {
-      if (!/^(https?|data:|blob:)/i.test(link)) {
-        link = atob(link);
-      }
+      if (!/^(https?|data:|blob:)/i.test(link)) link = atob(link);
     } catch {}
-
     try {
       link = decodeURIComponent(link);
     } catch {}
@@ -52,55 +42,52 @@ ${tabImg ? `<link rel="icon" href="${tabImg}">` : ""}
 * { margin:0; padding:0; background:black; }
 html, body { width:100%; height:100%; overflow:hidden; }
 iframe { width:100%; height:100%; border:none; }
-#fs {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: transparent;
-}
+#fs { position:fixed; inset:0; z-index:9999; }
 </style>
 </head>
 <body>
 
 <div id="fs"></div>
 
-<iframe
-  id="frame"
-  src="${safeLink}"
-  allow="fullscreen *"
-  allowfullscreen>
-</iframe>
+<iframe id="frame" src="${safeLink}" allow="fullscreen *" allowfullscreen></iframe>
 
 <script>
-  const f = document.getElementById("frame");
-  const overlay = document.getElementById("fs");
+const f = document.getElementById("frame");
+const o = document.getElementById("fs");
+o.addEventListener("click", () => {
+  o.remove();
+  f.requestFullscreen?.().catch(()=>{}) ||
+  f.webkitRequestFullscreen?.();
+}, { once:true });
 
-  overlay.addEventListener("click", () => {
-    overlay.remove();
-    if (f.requestFullscreen) f.requestFullscreen().catch(()=>{});
-    else if (f.webkitRequestFullscreen) f.webkitRequestFullscreen();
-  }, { once: true });
-
-  ${closeBlock ? `
-  window.addEventListener("beforeunload", e => {
-    e.preventDefault();
-    e.returnValue = "";
-  });
-  ` : ""}
+${closeBlock ? `
+window.addEventListener("beforeunload", e => {
+  e.preventDefault();
+  e.returnValue = "";
+});
+` : ""}
 <\/script>
 
 </body>
 </html>`;
 
-    const blob = new Blob([html], { type: "text/html" });
-    const blobURL = URL.createObjectURL(blob);
-
+    const blobURL = URL.createObjectURL(new Blob([html], { type: "text/html" }));
     location.replace(blobURL);
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", run);
-  } else {
-    run();
+  function waitForNVG() {
+    const found = document.getElementsByTagName("nvg")[0];
+    if (found) {
+      process(found);
+      return true;
+    }
+    return false;
+  }
+
+  if (!waitForNVG()) {
+    const obs = new MutationObserver(() => {
+      if (waitForNVG()) obs.disconnect();
+    });
+    obs.observe(document.documentElement, { childList: true, subtree: true });
   }
 })();
