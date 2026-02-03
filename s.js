@@ -1,5 +1,46 @@
-const html = `
-<!DOCTYPE html>
+(() => {
+  const s = document.currentScript;
+  if (!s) return;
+
+  let link = s.getAttribute("link");
+  const tabname = s.getAttribute("tabname");
+  const tabimage = s.getAttribute("tabimage");
+
+  if (!link) {
+    console.error("No link attribute provided");
+    return;
+  }
+
+  // base64 decode if needed
+  try {
+    if (!/^(https?|data:|blob:)/i.test(link)) {
+      link = atob(link);
+    }
+  } catch {}
+
+  // URI decode fallback
+  try {
+    link = decodeURIComponent(link);
+  } catch {}
+
+  // Apply title early (only affects the original page briefly)
+  if (tabname) document.title = tabname;
+
+  // Apply favicon early
+  if (tabimage) {
+    let icon = document.querySelector("link[rel*='icon']");
+    if (!icon) {
+      icon = document.createElement("link");
+      icon.rel = "icon";
+      document.head.appendChild(icon);
+    }
+    icon.href = tabimage;
+  }
+
+  // Escape quotes to avoid breaking HTML
+  const safeLink = link.replace(/"/g, "&quot;");
+
+  const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -22,7 +63,7 @@ iframe { width:100%; height:100%; border:none; }
 
 <iframe
   id="frame"
-  src="${link}"
+  src="${safeLink}"
   allow="fullscreen *"
   allowfullscreen>
 </iframe>
@@ -40,5 +81,11 @@ iframe { width:100%; height:100%; border:none; }
 </script>
 
 </body>
-</html>
-`;
+</html>`;
+
+  const blob = new Blob([html], { type: "text/html" });
+  const blobURL = URL.createObjectURL(blob);
+
+  // Replace immediately, no history entry
+  location.replace(blobURL);
+})();
