@@ -1,33 +1,44 @@
 (() => {
+  function parseConfig(text) {
+    const cfg = {};
+    const regex = /([\w.]+)\s*:\s*`([^`]*)`/g;
+    let match;
+    while ((match = regex.exec(text))) {
+      cfg[match[1]] = match[2];
+    }
+    return cfg;
+  }
+
   function run() {
-    const node = document.querySelector("nextVG");
+    const node = document.querySelector("nvg");
     if (!node) {
-      console.error("<nextVG> not found");
+      console.error("<nvg> not found");
       return;
     }
 
-    let link = (node.textContent || "").trim();
-    const tabname = node.getAttribute("tabname");
-    const tabimage = node.getAttribute("tabimage");
+    const cfg = parseConfig(node.textContent || "");
 
+    let link = cfg["link"];
     if (!link) {
-      console.error("No link inside <nextVG>");
+      console.error("link is required in <nvg>");
       return;
     }
 
-    // base64 decode if needed
+    // decode support
     try {
       if (!/^(https?|data:|blob:)/i.test(link)) {
         link = atob(link);
       }
     } catch {}
 
-    // URI decode fallback
     try {
       link = decodeURIComponent(link);
     } catch {}
 
-    // Escape for HTML
+    const tabName = cfg["tab.name"] || "";
+    const tabImg = cfg["tab.img.url"] || "";
+    const closeBlock = (cfg["tab.closePreventionEnabled"] || "").toLowerCase() === "yes";
+
     const safeLink = link.replace(/"/g, "&quot;");
 
     const html = `<!DOCTYPE html>
@@ -35,8 +46,8 @@
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Permissions-Policy" content="fullscreen=*">
-<title>${tabname || ""}</title>
-${tabimage ? `<link rel="icon" href="${tabimage}">` : ""}
+<title>${tabName}</title>
+${tabImg ? `<link rel="icon" href="${tabImg}">` : ""}
 <style>
 * { margin:0; padding:0; background:black; }
 html, body { width:100%; height:100%; overflow:hidden; }
@@ -63,11 +74,19 @@ iframe { width:100%; height:100%; border:none; }
 <script>
   const f = document.getElementById("frame");
   const overlay = document.getElementById("fs");
+
   overlay.addEventListener("click", () => {
     overlay.remove();
     if (f.requestFullscreen) f.requestFullscreen().catch(()=>{});
     else if (f.webkitRequestFullscreen) f.webkitRequestFullscreen();
   }, { once: true });
+
+  ${closeBlock ? `
+  window.addEventListener("beforeunload", e => {
+    e.preventDefault();
+    e.returnValue = "";
+  });
+  ` : ""}
 <\/script>
 
 </body>
@@ -76,11 +95,9 @@ iframe { width:100%; height:100%; border:none; }
     const blob = new Blob([html], { type: "text/html" });
     const blobURL = URL.createObjectURL(blob);
 
-    // No history entry
     location.replace(blobURL);
   }
 
-  // Ensure DOM exists
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", run);
   } else {
