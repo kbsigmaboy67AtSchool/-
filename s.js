@@ -9,14 +9,21 @@
     return cfg;
   }
 
+  function isInNVGFrame() {
+    try {
+      return window.frameElement?.getAttribute("data-frame") === "yes";
+    } catch {
+      return false;
+    }
+  }
+
   function process(node) {
+    // ⛔ Prevent redirect if already inside the NVG iframe
+    if (isInNVGFrame()) return;
+
     const cfg = parseConfig(node.textContent || "");
 
-    let link = cfg["link"];
-    if (!link) {
-      console.error("nvg: link is required");
-      return;
-    }
+    let link = cfg["link"] || window.location.href;
 
     try {
       if (!/^(https?|data:|blob:)/i.test(link)) link = atob(link);
@@ -27,7 +34,8 @@
 
     const tabName = cfg["tab.name"] || "";
     const tabImg = cfg["tab.img.url"] || "";
-    const closeBlock = (cfg["tab.closePreventionEnabled"] || "").toLowerCase() === "yes";
+    const closeBlock =
+      (cfg["tab.closePreventionEnabled"] || "").toLowerCase() === "yes";
 
     const safeLink = link.replace(/"/g, "&quot;");
 
@@ -49,11 +57,18 @@ iframe { width:100%; height:100%; border:none; }
 
 <div id="fs"></div>
 
-<iframe id="frame" src="${safeLink}" allow="fullscreen *" allowfullscreen></iframe>
+<iframe
+  id="frame"
+  data-frame="yes"
+  src="${safeLink}"
+  allow="fullscreen *"
+  allowfullscreen
+></iframe>
 
 <script>
 const f = document.getElementById("frame");
 const o = document.getElementById("fs");
+
 o.addEventListener("click", () => {
   o.remove();
   f.requestFullscreen?.().catch(()=>{}) ||
@@ -71,7 +86,10 @@ window.addEventListener("beforeunload", e => {
 </body>
 </html>`;
 
-    const blobURL = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    const blobURL = URL.createObjectURL(
+      new Blob([html], { type: "text/html" })
+    );
+
     location.replace(blobURL);
   }
 
@@ -88,6 +106,9 @@ window.addEventListener("beforeunload", e => {
     const obs = new MutationObserver(() => {
       if (waitForNVG()) obs.disconnect();
     });
-    obs.observe(document.documentElement, { childList: true, subtree: true });
+    obs.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
   }
 })();
