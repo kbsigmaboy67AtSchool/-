@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Data Encryptor v2</title>
+<style>
+body {
+    font-family: "Courier New", monospace;
+    background:#0a0e27;
+    color:#00ff00;
+    padding:20px;
+}
+.container {
+    max-width:900px;
+    margin:auto;
+    border:2px solid #00ff00;
+    padding:30px;
+    background:#1a1f3a;
+}
+textarea, input {
+    width:100%;
+    background:#0f1422;
+    color:#00ff00;
+    border:1px solid #00ff00;
+    padding:10px;
+    margin-top:5px;
+}
+button {
+    margin-top:10px;
+    padding:10px;
+    background:#0f1422;
+    color:#00ff00;
+    border:1px solid #00ff00;
+    cursor:pointer;
+}
+img {
+    max-width:100%;
+    margin-top:10px;
+    border:1px solid #00ff00;
+}
+.section { margin-bottom:30px; }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h2>🔐 Universal Encryptor</h2>
+
+<div class="section">
+<h3>Carrier Character</h3>
+<input id="carrierChar" maxlength="2" placeholder="Example: Λ 😈 A 🧿">
+</div>
+
+<div class="section">
+<h3>Text Encrypt</h3>
+<textarea id="inputText" placeholder="Enter text..."></textarea>
+<button onclick="encryptText()">Encrypt Text</button>
+<textarea id="encryptedOutput" placeholder="Encrypted output" readonly></textarea>
+</div>
+
+<div class="section">
+<h3>Text Decrypt</h3>
+<textarea id="encryptedInput" placeholder="Paste encrypted data..."></textarea>
+<button onclick="decryptText()">Decrypt</button>
+<textarea id="decryptedOutput" readonly></textarea>
+</div>
+
+<hr>
+
+<div class="section">
+<h3>Image / GIF Encrypt</h3>
+<input type="file" id="imageInput" accept="image/*">
+<button onclick="encryptImage()">Encrypt Image</button>
+<textarea id="imageEncrypted" readonly></textarea>
+</div>
+
+<div class="section">
+<h3>Image / GIF Decrypt</h3>
+<textarea id="imageDecryptInput"></textarea>
+<button onclick="decryptImage()">Decrypt Image</button>
+<img id="decodedImage">
+</div>
+
+</div>
+
+<script>
+const accents = [0x0300,0x0301,0x0302,0x0303];
+
+// ---------- CORE ENCODING ----------
+function textToHex(text){
+    return Array.from(text)
+        .map(c=>c.codePointAt(0).toString(16).padStart(6,"0"))
+        .join("");
+}
+function hexToText(hex){
+    let out="";
+    for(let i=0;i<hex.length;i+=6){
+        out+=String.fromCodePoint(parseInt(hex.slice(i,i+6),16));
+    }
+    return out;
+}
+function hexToMarks(hex){
+    let out="";
+    for(let h of hex){
+        let n=parseInt(h,16);
+        out+=String.fromCharCode(accents[Math.floor(n/4)]);
+        out+=String.fromCharCode(accents[n%4]);
+    }
+    return out;
+}
+function marksToHex(str){
+    let nums=[];
+    for(let c of str){
+        let i=accents.indexOf(c.charCodeAt(0));
+        if(i!==-1) nums.push(i);
+    }
+    let hex="";
+    for(let i=0;i<nums.length;i+=2){
+        hex+=(nums[i]*4+nums[i+1]).toString(16);
+    }
+    return hex;
+}
+
+// ---------- CARRIER DETECTION ----------
+function findCarrier(str){
+    for(let i=0;i<str.length;i++){
+        if(str.charCodeAt(i+1)>=0x300 && str.charCodeAt(i+1)<=0x36F){
+            return i;
+        }
+    }
+    throw "No carrier character found";
+}
+
+// ---------- TEXT ----------
+function encryptText(){
+    const text=inputText.value;
+    const carrier=carrierChar.value;
+    if(!text||!carrier) return alert("Missing input");
+    encryptedOutput.value=
+        "nvg:/"+carrier+hexToMarks(textToHex(text))+"/;";
+}
+
+function decryptText(){
+    try{
+        const data=encryptedInput.value;
+        const idx=findCarrier(data);
+        const marks=data.slice(idx+1,data.indexOf("/;",idx));
+        decryptedOutput.value=hexToText(marksToHex(marks));
+    }catch(e){ alert("Decrypt failed"); }
+}
+
+// ---------- IMAGE ----------
+function encryptImage(){
+    const f=imageInput.files[0];
+    const carrier=carrierChar.value;
+    if(!f||!carrier) return alert("Missing input");
+    const r=new FileReader();
+    r.onload=()=>{
+        const b64=r.result;
+        imageEncrypted.value=
+            "nvg:/"+carrier+hexToMarks(textToHex(b64))+"/;";
+    };
+    r.readAsDataURL(f);
+}
+
+function decryptImage(){
+    try{
+        const data=imageDecryptInput.value;
+        const idx=findCarrier(data);
+        const marks=data.slice(idx+1,data.indexOf("/;",idx));
+        decodedImage.src=hexToText(marksToHex(marks));
+    }catch(e){ alert("Image decrypt failed"); }
+}
+</script>
+</body>
+</html>
