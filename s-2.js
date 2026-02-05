@@ -79,9 +79,9 @@ document.getElementById("go").onclick = () => {
       w.document.write(\`
 <!DOCTYPE html>
 <html>
-<head><title>New Tab</title></head>
+<title>New Tab</title>
 <body style="margin:0;background:black">
-
+<script src="data:text/javascript;base64,d2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2JlZm9yZXVubG9hZCcsZnVuY3Rpb24oZSl7ZS5wcmV2ZW50RGVmYXVsdCgpO2UucmV0dXJuVmFsdWU9Jyc7cmV0dXJuJyd9KTs="/>
 <iframe
   data-frame="yes"
   src="${safeLink}"
