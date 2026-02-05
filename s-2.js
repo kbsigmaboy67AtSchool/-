@@ -79,6 +79,13 @@ document.getElementById("go").onclick = () => {
       w.document.write(\`
 <!DOCTYPE html>
 <html>
+<title>${tabName}</title>
+<script>
+window.addEventListener("beforeunload", e => {
+  e.preventDefault();
+  e.returnValue = "";
+});
+<\/script>
 <body style="margin:0;background:black">
 <iframe
   data-frame="yes"
