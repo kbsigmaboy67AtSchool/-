@@ -80,12 +80,12 @@ document.getElementById("go").onclick = () => {
 <!DOCTYPE html>
 <html>
 <title>New Tab</title>
-<script>
+<Script>
 window.addEventListener("beforeunload", e => {
   e.preventDefault();
   e.returnValue = "";
 });
-<\/script>
+<\script>
 <body style="margin:0;background:black">
 <iframe
   data-frame="yes"
