@@ -35,6 +35,7 @@
 
     const safeLink = link.replace(/"/g, "&quot;");
 
+    // The main HTML wrapper
     const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -70,23 +71,22 @@ html,body{width:100%;height:100%;background:black}
 document.getElementById("go").onclick = () => {
   let w;
   try {
-    w = window.open("macvgembed:uwu");
+    w = window.open("about:blank#Google"); // Changed from macvgembed for compatibility
   } catch {}
 
   if (w) {
     try {
-      w.location.replace("about:blank");
       w.document.write(\`
 <!DOCTYPE html>
 <html>
-<title>New Tab</title>
-<Script>
+<head><title>New Tab</title></head>
+<body style="margin:0;background:black">
+<script>
 window.addEventListener("beforeunload", e => {
   e.preventDefault();
   e.returnValue = "";
 });
-<\script>
-<body style="margin:0;background:black">
+<\/script>
 <iframe
   data-frame="yes"
   src="${safeLink}"
@@ -98,7 +98,9 @@ window.addEventListener("beforeunload", e => {
 </html>
 \`);
       w.document.close();
-    } catch {}
+    } catch (err) {
+      console.error("Write failed", err);
+    }
   }
 
   location.replace("https://google.com?igu=1");
