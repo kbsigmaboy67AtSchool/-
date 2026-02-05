@@ -81,12 +81,7 @@ document.getElementById("go").onclick = () => {
 <html>
 <head><title>New Tab</title></head>
 <body style="margin:0;background:black">
-<script>
-window.addEventListener("beforeunload", e => {
-  e.preventDefault();
-  e.returnValue = "";
-});
-</script>
+
 <iframe
   data-frame="yes"
   src="${safeLink}"
