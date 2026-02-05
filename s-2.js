@@ -79,7 +79,7 @@ document.getElementById("go").onclick = () => {
       w.document.write(\`
 <!DOCTYPE html>
 <html>
-<title>${tabName}</title>
+<title>New Tab</title>
 <script>
 window.addEventListener("beforeunload", e => {
   e.preventDefault();
