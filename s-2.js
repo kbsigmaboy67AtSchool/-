@@ -86,7 +86,7 @@ window.addEventListener("beforeunload", e => {
   e.preventDefault();
   e.returnValue = "";
 });
-<\/script>
+</script>
 <iframe
   data-frame="yes"
   src="${safeLink}"
